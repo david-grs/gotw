@@ -29,8 +29,8 @@ public:
 private:
 	void swap(stack<T>&);
 
-	T* _allocate_new_buffer(size_type);
-	void _destroy(T* mem, size_type size);
+	static T* _copy(T*, size_type /*size*/, size_type /*cap*/);
+	static void _destroy(T*, size_type /*size*/);
 
 	T* _data = nullptr;
 	size_type _capacity = 0;
@@ -54,12 +54,11 @@ stack<T>::~stack()
 template <class T>
 stack<T>::stack(const stack& s)
 {
+	_data = _copy(s._data, s._size, s._capacity);
+
+	assert(_data);
 	_capacity = s._capacity;
 	_size = s._size;
-	_data = s._data;
-
-	_data = _allocate_new_buffer(_capacity);
-	assert(_data != s._data);
 }
 
 template <class T>
@@ -99,32 +98,10 @@ void stack<T>::push(const T& t)
 }
 
 template <class T>
-T* stack<T>::_allocate_new_buffer(size_type capacity) 
-{
-	T* buff = static_cast<T*>(std::malloc(sizeof(T) * capacity));
-
-	size_type i;
-	try
-	{
-		for (i = 0; i < _size; ++i)
-		{
-			new (&buff[i]) T(_data[i]);
-		}
-	}
-	catch (...)
-	{
-		_destroy(buff, i);
-		throw std::bad_alloc();
-	}
-
-	assert(i == _size);
-	return buff;
-}
-
-template <class T>
 void stack<T>::reserve(size_type new_capacity) 
 {
-	T* new_data = _allocate_new_buffer(new_capacity);
+	assert(new_capacity >= _capacity);
+	T* new_data = _copy(_data, _size, new_capacity);
 
 	if (_data)
 	{
@@ -132,8 +109,8 @@ void stack<T>::reserve(size_type new_capacity)
 		_destroy(_data, _size);
 	}
 
-	_capacity = new_capacity;
 	_data = new_data;
+	_capacity = new_capacity;
 }
 
 template <class T>
@@ -151,13 +128,38 @@ T stack<T>::pop()
 }
 
 template <class T>
-void stack<T>::_destroy(T* mem, size_t size)
+T* stack<T>::_copy(T* data, size_type size, size_type capacity) 
+{
+	T* buff = static_cast<T*>(std::malloc(sizeof(T) * capacity));
+
+	size_type i;
+	try
+	{
+		for (i = 0; i < size; ++i)
+		{
+			new (&buff[i]) T(data[i]);
+		}
+	}
+	catch (...)
+	{
+		_destroy(buff, i);
+		throw std::bad_alloc();
+	}
+
+	assert(i == size);
+	return buff;
+}
+
+
+template <class T>
+void stack<T>::_destroy(T* data, size_t size)
 {
 	for (size_t i = size; i > 0; --i)
 	{
-		mem[i - 1].~T();
+		data[i - 1].~T();
 	}
-	std::free(mem);
+
+	std::free(data);
 }
 
 
