@@ -40,7 +40,6 @@ TEST_F(stack_test, push_many)
 	}
 
 	EXPECT_EQ(ElementsCount, _s.size());
-	int sum = 0;
 	for (std::size_t i = 0; i < ElementsCount; ++i)
 	{
 		EXPECT_EQ(ElementsCount - i - 1, _s.pop());
