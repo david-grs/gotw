@@ -22,10 +22,9 @@ public:
 	stack(stack&&) noexcept(std::is_nothrow_move_constructible<T>::value);
 	stack& operator=(stack&&) noexcept(std::is_nothrow_move_constructible<T>::value);
 
-	size_type size() const { return _size; }
-	size_type capacity() const { return _capacity; }
-	
-	bool empty() const { return size() == 0; }
+	size_type size() const noexcept { return _size; }
+	size_type capacity() const noexcept { return _capacity; }
+	bool empty() const noexcept { return size() == 0; }
 
 	void push(const T&);
 	template <class... Args> void emplace(Args&&...);
