@@ -18,7 +18,9 @@ public:
 	stack(const stack&);
 	stack& operator=(stack);
 
-	size_type size() const;
+	size_type size() const { return _size; }
+	size_type capacity() const { return _capacity; }
+	
 	bool empty() const { return size() == 0; }
 
 	void push(const T&);
@@ -76,12 +78,6 @@ stack<T>& stack<T>::operator=(stack<T> s)
 {
 	swap(s);
 	return *this;
-}
-
-template <class T>
-typename stack<T>::size_type stack<T>::size() const
-{
-	return _size;
 }
 
 template <class T>
