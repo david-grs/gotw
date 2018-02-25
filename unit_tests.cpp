@@ -113,3 +113,48 @@ TEST_F(copy_stack_test, assignment)
 	consume(_s);
 }
 
+class UnsafeToCopy
+{
+public:
+	UnsafeToCopy(int i) : 
+		_i(i) 
+	{}
+
+	UnsafeToCopy(const UnsafeToCopy& u) : 
+		_i(u._i)
+	{
+		if (u._i == 42)
+			throw std::runtime_error("foo");
+	}
+	
+	int get() const { return _i; }
+
+private:
+	int _i;
+};
+
+class stack_exception_test : public ::testing::Test
+{
+public:
+	stack_exception_test()
+	{
+		_s.emplace(42);
+		_s.emplace(1);
+	}
+
+	void TearDown() override
+	{
+		EXPECT_EQ(2u, _s.size());
+		EXPECT_EQ(1, _s.pop().get());
+		EXPECT_THROW(_s.pop(), std::runtime_error);
+	}
+
+protected:
+	stack<UnsafeToCopy> _s;
+};
+
+TEST_F(stack_exception_test, copy_ctor_throw)
+{
+	EXPECT_THROW(auto s = _s, std::bad_alloc);
+}
+
