@@ -158,3 +158,17 @@ TEST_F(stack_exception_test, copy_ctor_throw)
 	EXPECT_THROW(auto s = _s, std::bad_alloc);
 }
 
+TEST_F(stack_exception_test, assignment_throw)
+{
+	stack<UnsafeToCopy> s;
+	s.emplace(1);
+	s.emplace(2);
+	s.emplace(3);
+
+	EXPECT_THROW(s = _s, std::bad_alloc);
+
+	EXPECT_EQ(3u, s.size());
+	EXPECT_EQ(3, s.pop().get());
+	EXPECT_EQ(2, s.pop().get());
+	EXPECT_EQ(1, s.pop().get());
+}
