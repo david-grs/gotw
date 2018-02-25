@@ -1,5 +1,6 @@
 #pragma once
 
+#include <type_traits>
 #include <cstdint>
 #include <cstdlib>
 #include <cassert>
@@ -32,8 +33,9 @@ public:
 private:
 	void swap(stack<T>&);
 
-	static T* _copy(T*, size_type /*size*/, size_type /*cap*/);
-	static void _destroy(T*, size_type /*size*/);
+	static T* _copy(T*, size_type, size_type);
+	static T* _move(T*, size_type, size_type);
+	static void _destroy(T*, size_type);
 
 	T* _data = nullptr;
 	size_type _capacity = 0;
@@ -113,7 +115,7 @@ template <class T>
 void stack<T>::reserve(size_type new_capacity) 
 {
 	assert(new_capacity >= _capacity);
-	T* new_data = _copy(_data, _size, new_capacity);
+	T* new_data = _move(_data, _size, new_capacity);
 
 	if (_data)
 	{
@@ -140,16 +142,15 @@ T stack<T>::pop()
 }
 
 template <class T>
-T* stack<T>::_copy(T* data, size_type size, size_type capacity) 
+T* stack<T>::_copy(T* src, size_type size, size_type capacity) 
 {
 	T* buff = static_cast<T*>(std::malloc(sizeof(T) * capacity));
-
 	size_type i;
 	try
 	{
 		for (i = 0; i < size; ++i)
 		{
-			new (&buff[i]) T(data[i]);
+			new (&buff[i]) T(src[i]);
 		}
 	}
 	catch (...)
@@ -157,11 +158,28 @@ T* stack<T>::_copy(T* data, size_type size, size_type capacity)
 		_destroy(buff, i);
 		throw std::bad_alloc();
 	}
-
-	assert(i == size);
 	return buff;
 }
 
+template <class T>
+T* stack<T>::_move(T* src, size_type size, size_type capacity) 
+{
+	T* buff = static_cast<T*>(std::malloc(sizeof(T) * capacity));
+	size_type i;
+	try
+	{
+		for (i = 0; i < size; ++i)
+		{
+			new (&buff[i]) T(std::move_if_noexcept(src[i]));
+		}
+	}
+	catch (...)
+	{
+		_destroy(buff, i);
+		throw std::bad_alloc();
+	}
+	return buff;
+}
 
 template <class T>
 void stack<T>::_destroy(T* data, size_t size)

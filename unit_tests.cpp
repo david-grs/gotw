@@ -172,3 +172,65 @@ TEST_F(stack_exception_test, assignment_throw)
 	EXPECT_EQ(2, s.pop().get());
 	EXPECT_EQ(1, s.pop().get());
 }
+
+struct counter
+{
+	explicit counter(const std::string& t) : _t(t) {}
+
+	counter(const counter& c) : _t(c._t) { ++copies; }
+	counter& operator=(const counter& c) { _t = c._t; ++copies; return *this; }
+	
+	counter(counter&& c) noexcept : _t(std::move(c._t)) { ++moves; }
+	counter& operator=(const counter&& c) noexcept { _t = std::move(c._t); ++moves; return *this; }
+	
+	const std::string & get() const { return _t; }
+
+	static void reset() { copies = 0; moves = 0; }
+
+	static int moves;
+	static int copies;
+
+private:
+	std::string _t;
+};
+
+int counter::copies = 0;
+int counter::moves = 0;
+
+
+
+class stack_moves_test : public ::testing::Test
+{
+public:
+
+protected:
+	stack<counter> _s;
+};
+
+TEST_F(stack_moves_test, reserve)
+{
+	_s.emplace("foo");
+	_s.emplace("bar");
+
+	counter::reset();
+
+	_s.emplace("buz");
+	EXPECT_EQ(0, counter::copies);
+	EXPECT_EQ(2, counter::moves);
+}
+
+TEST_F(stack_moves_test, copies)
+{
+	_s.emplace("foo");
+	_s.emplace("bar");
+
+	auto s = _s;
+	EXPECT_EQ("bar", s.pop().get());
+	EXPECT_EQ("foo", s.pop().get());
+	
+	EXPECT_EQ("bar", _s.pop().get());
+	EXPECT_EQ("foo", _s.pop().get());
+}
+
+
+
