@@ -21,8 +21,9 @@ public:
 	size_type size() const;
 	bool empty() const { return size() == 0; }
 
-	T pop();
 	void push(const T&);
+	template <class... Args> void emplace(Args&&...);
+	T pop();
 
 	void reserve(size_type);
 
@@ -92,8 +93,23 @@ void stack<T>::push(const T& t)
 	}
 
 	assert(_capacity > _size);
-	_data[_size] = t;
 
+	_data[_size] = t;
+	++_size;
+}
+
+template <class T>
+template <class... Args>
+void stack<T>::emplace(Args&&... args)
+{
+	if (_size == _capacity)
+	{
+		reserve((_capacity + 1) * 2);
+	}
+
+	assert(_capacity > _size);
+
+	new (&_data[_size]) T(std::forward<Args>(args)...);
 	++_size;
 }
 
