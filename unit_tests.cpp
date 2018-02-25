@@ -232,5 +232,19 @@ TEST_F(stack_moves_test, copies)
 	EXPECT_EQ("foo", _s.pop().get());
 }
 
+TEST_F(stack_moves_test, moves)
+{
+	_s.emplace("foo");
+	_s.emplace("bar");
+
+	auto s = std::move(_s);
+	EXPECT_TRUE(_s.empty());
+
+	EXPECT_EQ("bar", s.pop().get());
+	EXPECT_EQ("foo", s.pop().get());
+}
+
+
+
 
 

@@ -18,6 +18,9 @@ public:
 
 	stack(const stack&) noexcept(std::is_nothrow_copy_constructible<T>::value);
 	stack& operator=(stack) noexcept(std::is_nothrow_copy_constructible<T>::value);
+	
+	stack(stack&&) noexcept(std::is_nothrow_move_constructible<T>::value);
+	stack& operator=(stack&&) noexcept(std::is_nothrow_move_constructible<T>::value);
 
 	size_type size() const { return _size; }
 	size_type capacity() const { return _capacity; }
@@ -79,6 +82,21 @@ void stack<T>::swap(stack<T>& other)
 template <class T>
 stack<T>& stack<T>::operator=(stack<T> s)
 noexcept(std::is_nothrow_copy_constructible<T>::value)
+{
+	swap(s);
+	return *this;
+}
+
+template <class T>
+stack<T>::stack(stack&& s) 
+noexcept(std::is_nothrow_move_constructible<T>::value)
+{
+	swap(s);
+}
+
+template <class T>
+stack<T>& stack<T>::operator=(stack<T>&& s)
+noexcept(std::is_nothrow_move_constructible<T>::value)
 {
 	swap(s);
 	return *this;
