@@ -13,11 +13,11 @@ public:
 	using value_type = T;
 	using size_type = std::size_t;
 
-	stack();
-	~stack();
+	stack() noexcept;
+	~stack() noexcept;
 
-	stack(const stack&);
-	stack& operator=(stack);
+	stack(const stack&) noexcept(std::is_nothrow_copy_constructible<T>::value);
+	stack& operator=(stack) noexcept(std::is_nothrow_copy_constructible<T>::value);
 
 	size_type size() const { return _size; }
 	size_type capacity() const { return _capacity; }
@@ -43,11 +43,11 @@ private:
 };
 
 template <class T>
-stack<T>::stack()
+stack<T>::stack() noexcept
 {}
 
 template <class T>
-stack<T>::~stack()
+stack<T>::~stack() noexcept
 {
 	if (_data)
 	{
@@ -57,7 +57,8 @@ stack<T>::~stack()
 }
 
 template <class T>
-stack<T>::stack(const stack& s)
+stack<T>::stack(const stack& s) 
+noexcept(std::is_nothrow_copy_constructible<T>::value)
 {
 	_data = _copy(s._data, s._size, s._capacity);
 
@@ -67,7 +68,7 @@ stack<T>::stack(const stack& s)
 }
 
 template <class T>
-void stack<T>::swap(stack<T>& other)
+void stack<T>::swap(stack<T>& other) 
 {
 	using std::swap;
 	swap(_data, other._data);
@@ -77,6 +78,7 @@ void stack<T>::swap(stack<T>& other)
 
 template <class T>
 stack<T>& stack<T>::operator=(stack<T> s)
+noexcept(std::is_nothrow_copy_constructible<T>::value)
 {
 	swap(s);
 	return *this;
