@@ -19,3 +19,4 @@ function(add_unit_tests target source)
 endfunction()
 
 add_subdirectory(gotw008_stack_exception)
+add_subdirectory(gotw002_temp)
