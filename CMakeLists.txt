@@ -20,3 +20,4 @@ endfunction()
 
 add_subdirectory(gotw008_stack_exception)
 add_subdirectory(gotw002_temp)
+add_subdirectory(gotw004_class)
