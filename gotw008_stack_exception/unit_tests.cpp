@@ -53,7 +53,7 @@ TEST_F(stack_test, pop)
 	_s.push(1);
 	EXPECT_EQ(1, _s.pop());
 	EXPECT_TRUE(_s.empty());
-	
+
 	_s.push(1);
 	_s.push(2);
 	_s.push(3);
@@ -96,7 +96,7 @@ public:
 TEST_F(copy_stack_test, copy_ctor)
 {
 	auto s = _s;
-	
+
 	consume(s);
 	consume(_s);
 }
@@ -116,17 +116,17 @@ TEST_F(copy_stack_test, assignment)
 class UnsafeToCopy
 {
 public:
-	UnsafeToCopy(int i) : 
-		_i(i) 
+	UnsafeToCopy(int i) :
+		_i(i)
 	{}
 
-	UnsafeToCopy(const UnsafeToCopy& u) : 
+	UnsafeToCopy(const UnsafeToCopy& u) :
 		_i(u._i)
 	{
 		if (u._i == 42)
 			throw std::runtime_error("foo");
 	}
-	
+
 	int get() const { return _i; }
 
 private:
@@ -155,7 +155,7 @@ protected:
 
 TEST_F(stack_exception_test, copy_ctor_throw)
 {
-	EXPECT_THROW(auto s = _s, std::bad_alloc);
+	EXPECT_THROW(auto s = _s, std::runtime_error);
 }
 
 TEST_F(stack_exception_test, assignment_throw)
@@ -165,7 +165,7 @@ TEST_F(stack_exception_test, assignment_throw)
 	s.emplace(2);
 	s.emplace(3);
 
-	EXPECT_THROW(s = _s, std::bad_alloc);
+	EXPECT_THROW(s = _s, std::runtime_error);
 
 	EXPECT_EQ(3u, s.size());
 	EXPECT_EQ(3, s.pop().get());
@@ -173,16 +173,17 @@ TEST_F(stack_exception_test, assignment_throw)
 	EXPECT_EQ(1, s.pop().get());
 }
 
-struct counter
+class counter
 {
+public:
 	explicit counter(const std::string& t) : _t(t) {}
 
 	counter(const counter& c) : _t(c._t) { ++copies; }
 	counter& operator=(const counter& c) { _t = c._t; ++copies; return *this; }
-	
+
 	counter(counter&& c) noexcept : _t(std::move(c._t)) { ++moves; }
 	counter& operator=(const counter&& c) noexcept { _t = std::move(c._t); ++moves; return *this; }
-	
+
 	const std::string & get() const { return _t; }
 
 	static void reset() { copies = 0; moves = 0; }
@@ -227,7 +228,7 @@ TEST_F(stack_moves_test, copies)
 	auto s = _s;
 	EXPECT_EQ("bar", s.pop().get());
 	EXPECT_EQ("foo", s.pop().get());
-	
+
 	EXPECT_EQ("bar", _s.pop().get());
 	EXPECT_EQ("foo", _s.pop().get());
 }
@@ -238,7 +239,6 @@ TEST_F(stack_moves_test, moves)
 	_s.emplace("bar");
 
 	auto s = std::move(_s);
-	EXPECT_TRUE(_s.empty());
 
 	EXPECT_EQ("bar", s.pop().get());
 	EXPECT_EQ("foo", s.pop().get());

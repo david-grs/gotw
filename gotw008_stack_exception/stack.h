@@ -6,19 +6,82 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <memory>
+
 template <class T>
-class stack
+class stack_base
 {
 public:
 	using value_type = T;
 	using size_type = std::size_t;
 
+	explicit stack_base() noexcept :
+		_data(nullptr),
+		_capacity(0),
+		_size(0)
+	{ }
+
+	explicit stack_base(size_type capacity) :
+		_data(static_cast<T*>(capacity == 0 ? nullptr : operator new(sizeof(T) * capacity))),
+		_capacity(capacity),
+		_size(0)
+	{ }
+
+	~stack_base() noexcept
+	{
+		if (_data)
+		{
+			std::destroy(_data, _data + _size);
+			operator delete(_data);
+			_data = nullptr;
+		}
+	}
+
+	template <class U>
+	void construct_at(U&& t, size_type pos)
+	noexcept(std::is_nothrow_move_constructible<T>::value)
+	{
+		assert(pos < _capacity);
+		new (&_data[pos]) T(std::forward<U>(t));
+	}
+
+protected:
+	void swap(stack_base<T>&);
+
+	T* _data = nullptr;
+	size_type _capacity = 0;
+	size_type _size = 0;
+};
+
+template <class T>
+void stack_base<T>::swap(stack_base<T>& other)
+{
+	using std::swap;
+	swap(_data, other._data);
+	swap(_size, other._size);
+	swap(_capacity, other._capacity);
+}
+
+template <class T>
+class stack : private stack_base<T>
+{
+	using stack_base<T>::_size;
+	using stack_base<T>::_capacity;
+	using stack_base<T>::_data;
+	using stack_base<T>::swap;
+
+public:
+	using value_type = T;
+	using size_type = std::size_t;
+
 	stack() noexcept;
+	stack(size_type);
+
 	~stack() noexcept;
 
 	stack(const stack&) noexcept(std::is_nothrow_copy_constructible<T>::value);
 	stack& operator=(stack) noexcept(std::is_nothrow_copy_constructible<T>::value);
-	
+
 	stack(stack&&) noexcept(std::is_nothrow_move_constructible<T>::value);
 	stack& operator=(stack&&) noexcept(std::is_nothrow_move_constructible<T>::value);
 
@@ -33,15 +96,8 @@ public:
 	void reserve(size_type);
 
 private:
-	void swap(stack<T>&);
-
 	static T* _copy(T*, size_type, size_type);
 	static T* _move(T*, size_type, size_type);
-	static void _destroy(T*, size_type);
-
-	T* _data = nullptr;
-	size_type _capacity = 0;
-	size_type _size = 0;
 };
 
 template <class T>
@@ -49,33 +105,36 @@ stack<T>::stack() noexcept
 {}
 
 template <class T>
+stack<T>::stack(size_type capacity) :
+	stack_base<T>(capacity)
+{}
+
+template <class T>
 stack<T>::~stack() noexcept
+{}
+
+template <class T>
+stack<T>::stack(const stack& other)
+noexcept(std::is_nothrow_copy_constructible<T>::value) :
+	stack_base<T>(other._capacity)
 {
-	if (_data)
+	for (size_type pos = 0; pos < other._size; ++pos)
 	{
-		_destroy(_data, _size);
-		_data = nullptr;
+		this->construct_at(other._data[pos], pos);
+		++_size;
 	}
 }
 
 template <class T>
-stack<T>::stack(const stack& s) 
-noexcept(std::is_nothrow_copy_constructible<T>::value)
+stack<T>::stack(stack&& other)
+noexcept(std::is_nothrow_move_constructible<T>::value) :
+	stack_base<T>(other._capacity)
 {
-	_data = _copy(s._data, s._size, s._capacity);
-
-	assert(_data);
-	_capacity = s._capacity;
-	_size = s._size;
-}
-
-template <class T>
-void stack<T>::swap(stack<T>& other) 
-{
-	using std::swap;
-	swap(_data, other._data);
-	swap(_size, other._size);
-	swap(_capacity, other._capacity);
+	for (size_type pos = 0; pos < other._size; ++pos)
+	{
+		this->construct_at(std::move_if_noexcept(other._data[pos]), pos);
+		++_size;
+	}
 }
 
 template <class T>
@@ -87,13 +146,6 @@ noexcept(std::is_nothrow_copy_constructible<T>::value)
 }
 
 template <class T>
-stack<T>::stack(stack&& s) 
-noexcept(std::is_nothrow_move_constructible<T>::value)
-{
-	swap(s);
-}
-
-template <class T>
 stack<T>& stack<T>::operator=(stack<T>&& s)
 noexcept(std::is_nothrow_move_constructible<T>::value)
 {
@@ -102,7 +154,7 @@ noexcept(std::is_nothrow_move_constructible<T>::value)
 }
 
 template <class T>
-void stack<T>::push(const T& t) 
+void stack<T>::push(const T& t)
 {
 	if (_size == _capacity)
 	{
@@ -131,23 +183,22 @@ void stack<T>::emplace(Args&&... args)
 }
 
 template <class T>
-void stack<T>::reserve(size_type new_capacity) 
+void stack<T>::reserve(size_type new_capacity)
 {
 	assert(new_capacity >= _capacity);
-	T* new_data = _move(_data, _size, new_capacity);
 
-	if (_data)
+	stack<T> new_stack(new_capacity);
+	for (size_type pos = 0; pos < _size; ++pos)
 	{
-		assert(_size > 0);
-		_destroy(_data, _size);
+		new_stack.construct_at(std::move_if_noexcept(_data[pos]), pos);
+		++new_stack._size;
 	}
 
-	_data = new_data;
-	_capacity = new_capacity;
+	swap(new_stack);
 }
 
 template <class T>
-T stack<T>::pop() 
+T stack<T>::pop()
 {
 	if (empty())
 	{
@@ -156,59 +207,7 @@ T stack<T>::pop()
 
 	const T elem = _data[_size - 1];
 	--_size;
-	
+
 	return elem;
 }
-
-template <class T>
-T* stack<T>::_copy(T* src, size_type size, size_type capacity) 
-{
-	T* buff = static_cast<T*>(std::malloc(sizeof(T) * capacity));
-	size_type i;
-	try
-	{
-		for (i = 0; i < size; ++i)
-		{
-			new (&buff[i]) T(src[i]);
-		}
-	}
-	catch (...)
-	{
-		_destroy(buff, i);
-		throw std::bad_alloc();
-	}
-	return buff;
-}
-
-template <class T>
-T* stack<T>::_move(T* src, size_type size, size_type capacity) 
-{
-	T* buff = static_cast<T*>(std::malloc(sizeof(T) * capacity));
-	size_type i;
-	try
-	{
-		for (i = 0; i < size; ++i)
-		{
-			new (&buff[i]) T(std::move_if_noexcept(src[i]));
-		}
-	}
-	catch (...)
-	{
-		_destroy(buff, i);
-		throw std::bad_alloc();
-	}
-	return buff;
-}
-
-template <class T>
-void stack<T>::_destroy(T* data, size_t size)
-{
-	for (size_t i = size; i > 0; --i)
-	{
-		data[i - 1].~T();
-	}
-
-	std::free(data);
-}
-
 
