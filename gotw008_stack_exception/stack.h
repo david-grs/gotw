@@ -37,12 +37,11 @@ public:
 		}
 	}
 
-	template <class U>
-	void construct_at(U&& t, size_type pos)
-	noexcept(std::is_nothrow_move_constructible<T>::value)
+	template <class... Args>
+	void construct_at(size_type pos, Args&&... args)
 	{
 		assert(pos < _capacity);
-		new (&_data[pos]) T(std::forward<U>(t));
+		new (&_data[pos]) T(std::forward<Args>(args)...);
 	}
 
 protected:
@@ -120,7 +119,7 @@ noexcept(std::is_nothrow_copy_constructible<T>::value) :
 {
 	for (size_type pos = 0; pos < other._size; ++pos)
 	{
-		this->construct_at(other._data[pos], pos);
+		this->construct_at(pos, other._data[pos]);
 		++_size;
 	}
 }
@@ -132,7 +131,7 @@ noexcept(std::is_nothrow_move_constructible<T>::value) :
 {
 	for (size_type pos = 0; pos < other._size; ++pos)
 	{
-		this->construct_at(std::move_if_noexcept(other._data[pos]), pos);
+		this->construct_at(pos, std::move_if_noexcept(other._data[pos]));
 		++_size;
 	}
 }
@@ -178,7 +177,7 @@ void stack<T>::emplace(Args&&... args)
 
 	assert(_capacity > _size);
 
-	new (&_data[_size]) T(std::forward<Args>(args)...);
+	this->construct_at(_size, std::forward<Args>(args)...);
 	++_size;
 }
 
@@ -190,7 +189,7 @@ void stack<T>::reserve(size_type new_capacity)
 	stack<T> new_stack(new_capacity);
 	for (size_type pos = 0; pos < _size; ++pos)
 	{
-		new_stack.construct_at(std::move_if_noexcept(_data[pos]), pos);
+		new_stack.construct_at(pos, std::move_if_noexcept(_data[pos]));
 		++new_stack._size;
 	}
 
