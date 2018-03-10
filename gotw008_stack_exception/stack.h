@@ -78,8 +78,6 @@ public:
 	using size_type = std::size_t;
 
 	stack() noexcept;
-	stack(size_type);
-
 	~stack() noexcept;
 
 	stack(const stack&) noexcept(std::is_nothrow_copy_constructible<T>::value);
@@ -99,6 +97,8 @@ public:
 	void reserve(size_type);
 
 private:
+	stack(size_type capacity);
+
 	static T* _copy(T*, size_type, size_type);
 	static T* _move(T*, size_type, size_type);
 };
