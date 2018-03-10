@@ -68,6 +68,7 @@ class stack : private stack_base<T>
 	using stack_base<T>::_capacity;
 	using stack_base<T>::_data;
 	using stack_base<T>::swap;
+	using stack_base<T>::construct_at;
 
 public:
 	using value_type = T;
@@ -119,7 +120,7 @@ noexcept(std::is_nothrow_copy_constructible<T>::value) :
 {
 	for (size_type pos = 0; pos < other._size; ++pos)
 	{
-		this->construct_at(pos, other._data[pos]);
+		construct_at(pos, other._data[pos]);
 		++_size;
 	}
 }
@@ -131,7 +132,7 @@ noexcept(std::is_nothrow_move_constructible<T>::value) :
 {
 	for (size_type pos = 0; pos < other._size; ++pos)
 	{
-		this->construct_at(pos, std::move_if_noexcept(other._data[pos]));
+		construct_at(pos, std::move_if_noexcept(other._data[pos]));
 		++_size;
 	}
 }
@@ -177,7 +178,7 @@ void stack<T>::emplace(Args&&... args)
 
 	assert(_capacity > _size);
 
-	this->construct_at(_size, std::forward<Args>(args)...);
+	construct_at(_size, std::forward<Args>(args)...);
 	++_size;
 }
 
