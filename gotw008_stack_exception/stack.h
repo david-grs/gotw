@@ -37,6 +37,9 @@ public:
 		}
 	}
 
+	stack_base(const stack_base&) =delete;
+	stack_base(stack_base&&) =delete;
+
 	template <class... Args>
 	void construct_at(size_type pos, Args&&... args)
 	{
