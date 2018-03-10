@@ -75,6 +75,8 @@ class stack : private stack_base<T>
 
 public:
 	using value_type = T;
+	using reference = T&;
+	using const_reference = const T&;
 	using size_type = std::size_t;
 
 	stack() noexcept;
@@ -89,6 +91,9 @@ public:
 	size_type size() const noexcept { return _size; }
 	size_type capacity() const noexcept { return _capacity; }
 	bool empty() const noexcept { return size() == 0; }
+
+	reference top();
+	const_reference top() const;
 
 	void push(const T&);
 	template <class... Args> void emplace(Args&&...);
@@ -195,6 +200,23 @@ void stack<T>::reserve(size_type new_capacity)
 	}
 
 	swap(new_stack);
+}
+
+template <class T>
+typename stack<T>::reference stack<T>::top()
+{
+	if (empty())
+	{
+		throw std::runtime_error("empty container");
+	}
+
+	return _data[_size - 1];
+}
+
+template <class T>
+typename stack<T>::const_reference stack<T>::top() const
+{
+	return const_cast<stack<T>&>(*this).top();
 }
 
 template <class T>
