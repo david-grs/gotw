@@ -98,9 +98,6 @@ public:
 
 private:
 	stack(size_type capacity);
-
-	static T* _copy(T*, size_type, size_type);
-	static T* _move(T*, size_type, size_type);
 };
 
 template <class T>
