@@ -220,16 +220,14 @@ typename stack<T>::const_reference stack<T>::top() const
 }
 
 template <class T>
-T stack<T>::pop()
+void stack<T>::pop()
 {
 	if (empty())
 	{
 		throw std::runtime_error("empty container");
 	}
 
-	const T elem = _data[_size - 1];
+	std::destroy_at(&_data[_size]);
 	--_size;
-
-	return elem;
 }
 
